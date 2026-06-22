@@ -1,0 +1,75 @@
+# MPU6050 Embedded Driver for STM32 over I2C
+
+Reusable MPU6050 firmware driver written in **C** for **STM32 microcontrollers** using **STM32 HAL**.
+
+Supports accelerometer, gyroscope, and temperature acquisition with configurable operating modes and multi-device support over a shared I2C bus.
+
+---
+
+## 🛠 Supported Platforms
+
+Compatible with STM32 devices using STM32 HAL.
+
+Supported families:
+
+`F0 • F1 • F3 • F4 • F7 • G0 • H7 • L0 • L1 • L4 • U5 • WB`
+
+---
+
+## 📂 Project Structure
+
+```text id="6st2ic"
+MPU6050/
+├── mpu6050.c
+├── mpu6050.h
+├── mpu6050_config.h
+└── README.md
+```
+
+### Supported Addresses
+
+| AD0  | Address |
+| ---- | ------- |
+| LOW  | `0x68`  |
+| HIGH | `0x69`  |
+
+Supports **up to 2 MPU6050 modules** on the same I²C bus.
+
+---
+
+## 🚀 Quick Start
+
+```c id="9u5vg8"
+#include "mpu6050.h"
+
+MPU6050 imu;
+
+MPU6050_Init(&hi2c1, &imu, 0x68);
+
+MPU6050_ReadAll(&imu);
+
+printf("AX: %.2f g\n", imu.accel_gx);
+printf("GX: %.2f dps\n", imu.gyro_dps_x);
+printf("Temp: %.2f C\n", imu.temp_c);
+```
+
+---
+
+## 📚 API
+
+```c id="prdtw2"
+MPU6050_Init()
+MPU6050_ReadAccel()
+MPU6050_ReadGyro()
+MPU6050_ReadTemp()
+MPU6050_ReadAll()
+```
+
+Return values:
+
+| Code | Meaning |
+| ---- | ------- |
+| `0`  | Success |
+| `1`  | Error   |
+
+---
