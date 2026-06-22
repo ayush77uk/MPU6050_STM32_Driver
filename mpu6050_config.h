@@ -1,5 +1,5 @@
-#ifndef MPU6050_CONFIG_H
-#define MPU6050_CONFIG_H
+#ifndef __MPU6050_CONFIG_H__
+#define __MPU6050_CONFIG_H__
 
 #include <stdint.h>
 
