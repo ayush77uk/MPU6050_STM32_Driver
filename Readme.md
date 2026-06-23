@@ -53,35 +53,35 @@ MPU6050 example_object;
 ```
 
 Initialize the MPU6050 module.
-Parameters: (&I2C_Handle, &example_object, device_address) :
+Parameters: (&I2C_Handle, &example_object, device_address):
 ```c
-MPU6050_Init(&hi2c1, &example_object, 0x68)
+MPU6050_Init(&hi2c1, &example_object, 0x68);
 ```
 
 Automatic offset calibration.
-Parameters: (Address of device instance, Number of sample readings to take) :
+Parameters: (Address of device instance, Number of sample readings to take):
 ```c
 MPU6050_Calibrate(&example_object, sample);
 ```
 
 Read all sensors:
 ```c
-MPU6050_ReadAll(&example_object);
+MPU6050_Read_All(&example_object);
 ```
 
-Read Accelerometer (g value) :
+Read Accelerometer (g value):
 ```c
-MPU6050_ReadAccel(&example_object);
+MPU6050_Read_Accel(&example_object);
 ```
 
-Read Gyroscope (Degrees per second) :
+Read Gyroscope (Degrees per second):
 ```c
-MPU6050_ReadGyro(&example_object);
+MPU6050_Read_Gyro(&example_object);
 ```
 
-Read module internal temperature (Degrees Celsius) :
+Read module internal temperature (Degrees Celsius):
 ```c
-MPU6050_ReadTemp(&example_object);
+MPU6050_Read_Temp(&example_object);
 ```
 
 
