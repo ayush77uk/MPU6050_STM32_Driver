@@ -6,46 +6,55 @@ const float Gyro_range_div_array[] = {131.0, 65.5, 32.8, 16.4};
 
 //---------------------------------
 
-uint8_t MPU6050_Init(I2C_HandleTypeDef *hi2c, MPU6050 *mpu6050, uint8_t address)
+uint8_t MPU6050_Init(I2C_HandleTypeDef *hi2c, MPU6050 *mpu, uint8_t address)
 {
     if(address != 0x68 && address != 0x69) return 1;
 
-    mpu6050->i2c = hi2c;
-    mpu6050->addr = address;
-    mpu6050->i2c_addr = (mpu6050->addr) << 1;
-    mpu6050->accel_range = accel_2g;
-    mpu6050->gyro_range = gyro_250dps;
-    mpu6050->accel_range_div = Accel_range_div_array[mpu6050->accel_range];
-    mpu6050->gyro_range_div = Gyro_range_div_array[mpu6050->gyro_range];
+    mpu->i2c = hi2c;
+    mpu->addr = address;
+    mpu->i2c_addr = (mpu->addr) << 1;
 
     uint8_t addr_check;
     uint8_t data;
 
-    if(HAL_I2C_Mem_Read(mpu6050->i2c, mpu6050->i2c_addr, WHO_AM_I_REG, 1, &addr_check, 1, i2c_timeout) != HAL_OK) return 1;
+    if(HAL_I2C_Mem_Read(mpu->i2c, mpu->i2c_addr, WHO_AM_I_REG, 1, &addr_check, 1, i2c_timeout) != HAL_OK) return 1;
 
-    if(addr_check == mpu6050->addr){
+    if(addr_check == mpu->addr){
+
+        mpu->accel_range = accel_2g;
+        mpu->gyro_range = gyro_250dps;
+        mpu->accel_range_div = Accel_range_div_array[mpu->accel_range];
+        mpu->gyro_range_div = Gyro_range_div_array[mpu->gyro_range];
+        
+        mpu->gyro_offset_x = 0;
+        mpu->gyro_offset_y = 0;
+        mpu->gyro_offset_z = 0;
+
+        mpu->accel_offset_x = 0;
+        mpu->accel_offset_y = 0;
+        mpu->accel_offset_z = 0;
 
         //Device Reset
         data = 0 | (1 << 7);
-        if(HAL_I2C_Mem_Write(mpu6050->i2c, mpu6050->i2c_addr, PWR_MGMT_1_REG, 1, &data, 1, i2c_timeout) != HAL_OK) return 1;
+        if(HAL_I2C_Mem_Write(mpu->i2c, mpu->i2c_addr, PWR_MGMT_1_REG, 1, &data, 1, i2c_timeout) != HAL_OK) return 1;
         HAL_Delay(20);
 
         //Power configuration setup
         data = 0;
-        mpu6050->state = STATE_INITIALIZED;
+        mpu->state = STATE_INITIALIZED;
         #ifdef SLEEP_MODE_ACTIVATE
         data |= (1 << 6);
-        mpu6050->state = STATE_SLEEP_MODE;
+        mpu->state = STATE_SLEEP_MODE;
         #endif
         #if defined(LOW_POWER_MODE_ACTIVATE) && !defined(SLEEP_MODE_ACTIVATE)
         data |= (1 << 5);
-        mpu6050->state = STATE_LOW_POWER_MODE;
+        mpu->state = STATE_LOW_POWER_MODE;
         #endif
         #ifdef TEMP_DISABLE
         data |= (1 << 3);
         #endif
         
-        if(HAL_I2C_Mem_Write(mpu6050->i2c, mpu6050->i2c_addr, PWR_MGMT_1_REG, 1, &data, 1, i2c_timeout) != HAL_OK) return 1;
+        if(HAL_I2C_Mem_Write(mpu->i2c, mpu->i2c_addr, PWR_MGMT_1_REG, 1, &data, 1, i2c_timeout) != HAL_OK) return 1;
 
         //Set up Low Power Mode frequency and axes Standby config
         data = 0 | (LP_WAKE_CTRL << 7);
@@ -68,25 +77,25 @@ uint8_t MPU6050_Init(I2C_HandleTypeDef *hi2c, MPU6050 *mpu6050, uint8_t address)
         data |= 1;
         #endif
 
-        if(HAL_I2C_Mem_Write(mpu6050->i2c, mpu6050->i2c_addr, PWR_MGMT_2_REG, 1, &data, 1, i2c_timeout) != HAL_OK) return 1;
+        if(HAL_I2C_Mem_Write(mpu->i2c, mpu->i2c_addr, PWR_MGMT_2_REG, 1, &data, 1, i2c_timeout) != HAL_OK) return 1;
 
         //Set Digital Low Pass Filter
         data = 3;
-        if(HAL_I2C_Mem_Write(mpu6050->i2c, mpu6050->i2c_addr, CONFIG_REG, 1, &data, 1, i2c_timeout) != HAL_OK) return 1;
+        if(HAL_I2C_Mem_Write(mpu->i2c, mpu->i2c_addr, CONFIG_REG, 1, &data, 1, i2c_timeout) != HAL_OK) return 1;
 
         // Set data Sample Rate by writing SMPLRT_DIV register
         data = 0x07;
-        if(HAL_I2C_Mem_Write(mpu6050->i2c, mpu6050->i2c_addr, SMPLRT_DIV_REG, 1, &data, 1, i2c_timeout) != HAL_OK) return 1;
+        if(HAL_I2C_Mem_Write(mpu->i2c, mpu->i2c_addr, SMPLRT_DIV_REG, 1, &data, 1, i2c_timeout) != HAL_OK) return 1;
 
         // Set accelerometer configuration in ACCEL_CONFIG Register
         // XA_ST=0,YA_ST=0,ZA_ST=0, FS_SEL=0 -> 2g
-        data = 0 | (mpu6050->accel_range << 4);
-        if(HAL_I2C_Mem_Write(mpu6050->i2c, mpu6050->i2c_addr, ACCEL_CONFIG_REG, 1, &data, 1, i2c_timeout) != HAL_OK) return 1;
+        data = 0 | (mpu->accel_range << 3);
+        if(HAL_I2C_Mem_Write(mpu->i2c, mpu->i2c_addr, ACCEL_CONFIG_REG, 1, &data, 1, i2c_timeout) != HAL_OK) return 1;
 
         // Set Gyroscopic configuration in GYRO_CONFIG Register
         // XG_ST=0,YG_ST=0,ZG_ST=0, FS_SEL=0 -> 250 /s
-        data = 0 | (mpu6050->gyro_range << 4);
-        if(HAL_I2C_Mem_Write(mpu6050->i2c, mpu6050->i2c_addr, GYRO_CONFIG_REG, 1, &data, 1, i2c_timeout) != HAL_OK) return 1;
+        data = 0 | (mpu->gyro_range << 3);
+        if(HAL_I2C_Mem_Write(mpu->i2c, mpu->i2c_addr, GYRO_CONFIG_REG, 1, &data, 1, i2c_timeout) != HAL_OK) return 1;
 
         return 0;   //Initialization successful
     }
@@ -95,70 +104,70 @@ uint8_t MPU6050_Init(I2C_HandleTypeDef *hi2c, MPU6050 *mpu6050, uint8_t address)
 
 //---------------------------------
 
-uint8_t MPU6050_ReadAccel(MPU6050 *mpu6050)
+uint8_t MPU6050_Read_Accel(MPU6050 *mpu)
 {
     uint8_t Data_buff[6];
 
     // Read 6 BYTES of data starting from ACCEL_XOUT_H register
-    if(HAL_I2C_Mem_Read(mpu6050->i2c, mpu6050->i2c_addr, ACCEL_XOUT_H_REG, 1, Data_buff, 6, i2c_timeout) != HAL_OK) return 1;
+    if(HAL_I2C_Mem_Read(mpu->i2c, mpu->i2c_addr, ACCEL_XOUT_H_REG, 1, Data_buff, 6, i2c_timeout) != HAL_OK) return 1;
 
-    mpu6050->accel_raw_x = (int16_t)(Data_buff[0] << 8 | Data_buff[1]);
-    mpu6050->accel_raw_y = (int16_t)(Data_buff[2] << 8 | Data_buff[3]);
-    mpu6050->accel_raw_z = (int16_t)(Data_buff[4] << 8 | Data_buff[5]);
+    mpu->accel_raw_x = (int16_t)(Data_buff[0] << 8 | Data_buff[1]);
+    mpu->accel_raw_y = (int16_t)(Data_buff[2] << 8 | Data_buff[3]);
+    mpu->accel_raw_z = (int16_t)(Data_buff[4] << 8 | Data_buff[5]);
 
     /*
     Convert the raw accelerometer readings into g values.
     If the accelerometer range is not set by the user, by default the range is set to 2g in the MPU6050_Init() function
     */
-    mpu6050->accel_gx = mpu6050->accel_raw_x / mpu6050->accel_range_div;
-    mpu6050->accel_gy = mpu6050->accel_raw_y / mpu6050->accel_range_div;
-    mpu6050->accel_gz = mpu6050->accel_raw_z / mpu6050->accel_range_div;
+    mpu->accel_gx = (mpu->accel_raw_x / mpu->accel_range_div) - mpu->accel_offset_x;
+    mpu->accel_gy = (mpu->accel_raw_y / mpu->accel_range_div) - mpu->accel_offset_y;
+    mpu->accel_gz = (mpu->accel_raw_z / mpu->accel_range_div) - mpu->accel_offset_z;
 
     return 0;
 }
 
 //---------------------------------
 
-uint8_t MPU6050_ReadGyro(MPU6050 *mpu6050)
+uint8_t MPU6050_Read_Gyro(MPU6050 *mpu)
 {
     uint8_t Data_buff[6];
 
     // Read 6 BYTES of data starting from GYRO_XOUT_H register
-    if(HAL_I2C_Mem_Read(mpu6050->i2c, mpu6050->i2c_addr, GYRO_XOUT_H_REG, 1, Data_buff, 6, i2c_timeout) != HAL_OK) return 1;
+    if(HAL_I2C_Mem_Read(mpu->i2c, mpu->i2c_addr, GYRO_XOUT_H_REG, 1, Data_buff, 6, i2c_timeout) != HAL_OK) return 1;
 
-    mpu6050->gyro_raw_x = (int16_t)(Data_buff[0] << 8 | Data_buff[1]);
-    mpu6050->gyro_raw_y = (int16_t)(Data_buff[2] << 8 | Data_buff[3]);
-    mpu6050->gyro_raw_z = (int16_t)(Data_buff[4] << 8 | Data_buff[5]);
+    mpu->gyro_raw_x = (int16_t)(Data_buff[0] << 8 | Data_buff[1]);
+    mpu->gyro_raw_y = (int16_t)(Data_buff[2] << 8 | Data_buff[3]);
+    mpu->gyro_raw_z = (int16_t)(Data_buff[4] << 8 | Data_buff[5]);
 
     /*
     Convert the raw gyroscope readings into Degree/second values.
     If the gyroscope range is not set by the user, by default the range is set to 250deg/s in the MPU6050_Init() function
     */
-    mpu6050->gyro_dps_x = mpu6050->gyro_raw_x / mpu6050->gyro_range_div;
-    mpu6050->gyro_dps_y = mpu6050->gyro_raw_y / mpu6050->gyro_range_div;
-    mpu6050->gyro_dps_z = mpu6050->gyro_raw_z / mpu6050->gyro_range_div;
+    mpu->gyro_dps_x = (mpu->gyro_raw_x / mpu->gyro_range_div) - mpu->gyro_offset_x;
+    mpu->gyro_dps_y = (mpu->gyro_raw_y / mpu->gyro_range_div) - mpu->gyro_offset_y;
+    mpu->gyro_dps_z = (mpu->gyro_raw_z / mpu->gyro_range_div) - mpu->gyro_offset_z;
 
     return 0;
 }
 
 //---------------------------------
 
-uint8_t MPU6050_ReadTemp(MPU6050 *mpu6050)
+uint8_t MPU6050_Read_Temp(MPU6050 *mpu)
 {
     uint8_t DataBuff[2];
 
     // Read 2 BYTES of data starting from TEMP_OUT_H_REG register
-    if(HAL_I2C_Mem_Read(mpu6050->i2c, mpu6050->i2c_addr, TEMP_OUT_H_REG, 1, DataBuff, 2, i2c_timeout) != HAL_OK) return 1;
+    if(HAL_I2C_Mem_Read(mpu->i2c, mpu->i2c_addr, TEMP_OUT_H_REG, 1, DataBuff, 2, i2c_timeout) != HAL_OK) return 1;
 
-    mpu6050->temp_raw = (int16_t)(DataBuff[0] << 8 | DataBuff[1]);
-    mpu6050->temp_c = (float)((int16_t)mpu6050->temp_raw / (float)340.0 + (float)36.53);
+    mpu->temp_raw = (int16_t)(DataBuff[0] << 8 | DataBuff[1]);
+    mpu->temp_c = (float)((int16_t)mpu->temp_raw / (float)340.0 + (float)36.53);
 
     return 0;
 }
 
 //---------------------------------
 
-uint8_t MPU6050_ReadAll(MPU6050 *mpu6050)
+uint8_t MPU6050_Read_All(MPU6050 *mpu)
 {
     uint8_t Data_buff[14];
 
@@ -169,32 +178,151 @@ uint8_t MPU6050_ReadAll(MPU6050 *mpu6050)
     GYRO_X,Y,Z  (6 bytes)
     */
 
-    if(HAL_I2C_Mem_Read(mpu6050->i2c, mpu6050->i2c_addr, ACCEL_XOUT_H_REG, 1, Data_buff, 14, i2c_timeout) != HAL_OK) return 1;
+    if(HAL_I2C_Mem_Read(mpu->i2c, mpu->i2c_addr, ACCEL_XOUT_H_REG, 1, Data_buff, 14, i2c_timeout) != HAL_OK) return 1;
 
     // Accelerometer
 
-    mpu6050->accel_raw_x = (int16_t)((Data_buff[0] << 8) | Data_buff[1]);
-    mpu6050->accel_raw_y = (int16_t)((Data_buff[2] << 8) | Data_buff[3]);
-    mpu6050->accel_raw_z = (int16_t)((Data_buff[4] << 8) | Data_buff[5]);
+    mpu->accel_raw_x = (int16_t)((Data_buff[0] << 8) | Data_buff[1]);
+    mpu->accel_raw_y = (int16_t)((Data_buff[2] << 8) | Data_buff[3]);
+    mpu->accel_raw_z = (int16_t)((Data_buff[4] << 8) | Data_buff[5]);
 
-    mpu6050->accel_gx = (float)mpu6050->accel_raw_x / mpu6050->accel_range_div;
-    mpu6050->accel_gy = (float)mpu6050->accel_raw_y / mpu6050->accel_range_div;
-    mpu6050->accel_gz = (float)mpu6050->accel_raw_z / mpu6050->accel_range_div;
+    mpu->accel_gx = (float)mpu->accel_raw_x / mpu->accel_range_div;
+    mpu->accel_gy = (float)mpu->accel_raw_y / mpu->accel_range_div;
+    mpu->accel_gz = (float)mpu->accel_raw_z / mpu->accel_range_div;
+
+    mpu->accel_gx -= mpu->accel_offset_x;
+    mpu->accel_gy -= mpu->accel_offset_y;
+    mpu->accel_gz -= mpu->accel_offset_z;
 
     // Temperature
 
-    mpu6050->temp_raw = (int16_t)((Data_buff[6] << 8) | Data_buff[7]);
-    mpu6050->temp_c = ((float)mpu6050->temp_raw / 340.0f) + 36.53f;
+    mpu->temp_raw = (int16_t)((Data_buff[6] << 8) | Data_buff[7]);
+    mpu->temp_c = ((float)mpu->temp_raw / 340.0f) + 36.53f;
 
     // Gyroscope
 
-    mpu6050->gyro_raw_x = (int16_t)((Data_buff[8] << 8) | Data_buff[9]);
-    mpu6050->gyro_raw_y = (int16_t)((Data_buff[10] << 8) | Data_buff[11]);
-    mpu6050->gyro_raw_z = (int16_t)((Data_buff[12] << 8) | Data_buff[13]);
+    mpu->gyro_raw_x = (int16_t)((Data_buff[8] << 8) | Data_buff[9]);
+    mpu->gyro_raw_y = (int16_t)((Data_buff[10] << 8) | Data_buff[11]);
+    mpu->gyro_raw_z = (int16_t)((Data_buff[12] << 8) | Data_buff[13]);
 
-    mpu6050->gyro_dps_x = (float)mpu6050->gyro_raw_x / mpu6050->gyro_range_div;
-    mpu6050->gyro_dps_y = (float)mpu6050->gyro_raw_y / mpu6050->gyro_range_div;
-    mpu6050->gyro_dps_z = (float)mpu6050->gyro_raw_z / mpu6050->gyro_range_div;
+    mpu->gyro_dps_x = (float)mpu->gyro_raw_x / mpu->gyro_range_div;
+    mpu->gyro_dps_y = (float)mpu->gyro_raw_y / mpu->gyro_range_div;
+    mpu->gyro_dps_z = (float)mpu->gyro_raw_z / mpu->gyro_range_div;
+
+    mpu->gyro_dps_x -= mpu->gyro_offset_x;
+    mpu->gyro_dps_y -= mpu->gyro_offset_y;
+    mpu->gyro_dps_z -= mpu->gyro_offset_z;
+
+    return 0;
+}
+
+//---------------------------------
+
+uint8_t MPU6050_Set_Accel_Range(MPU6050 *mpu, uint8_t range)
+{
+    if(range > accel_16g)
+        return 1;
+
+    uint8_t data;
+
+    /* Read current register value */
+    if(HAL_I2C_Mem_Read(mpu->i2c, mpu->i2c_addr, ACCEL_CONFIG_REG, 1, &data, 1, i2c_timeout) != HAL_OK)
+        return 1;
+
+    /* Clear FS_SEL bits [4:3] */
+    data &= ~(0x03 << 3);
+
+    /* Set new range */
+    data |= (range << 3);
+
+    if(HAL_I2C_Mem_Write( mpu->i2c, mpu->i2c_addr, ACCEL_CONFIG_REG, 1, &data, 1, i2c_timeout) != HAL_OK)
+        return 1;
+
+    mpu->accel_range = range;
+    mpu->accel_range_div = Accel_range_div_array[range];
+
+    return 0;
+}
+
+//---------------------------------
+
+uint8_t MPU6050_Set_Gyro_Range(MPU6050 *mpu, uint8_t range)
+{
+    if(range > gyro_2000dps)
+        return 1;
+
+    uint8_t data;
+
+    /* Read current register value */
+    if(HAL_I2C_Mem_Read( mpu->i2c, mpu->i2c_addr, GYRO_CONFIG_REG, 1, &data, 1, i2c_timeout) != HAL_OK)
+        return 1;
+
+    /* Clear FS_SEL bits [4:3] */
+    data &= ~(0x03 << 3);
+
+    /* Set new range */
+    data |= (range << 3);
+
+    if(HAL_I2C_Mem_Write( mpu->i2c, mpu->i2c_addr, GYRO_CONFIG_REG, 1, &data, 1, i2c_timeout) != HAL_OK)
+        return 1;
+
+    mpu->gyro_range = range;
+    mpu->gyro_range_div = Gyro_range_div_array[range];
+
+    return 0;
+}
+
+//---------------------------------
+
+uint8_t MPU6050_Calibrate(MPU6050 *mpu, uint16_t samples)
+{
+    float gx=0, gy=0, gz=0;
+    float ax=0, ay=0, az=0;
+
+    for(int i=0;i<samples;i++)
+    {
+        MPU6050_Read_All(mpu);
+
+        gx += mpu->gyro_dps_x;
+        gy += mpu->gyro_dps_y;
+        gz += mpu->gyro_dps_z;
+
+        ax += mpu->accel_gx;
+        ay += mpu->accel_gy;
+        az += mpu->accel_gz;
+
+        HAL_Delay(5);
+    }
+
+    mpu->gyro_offset_x = gx/samples;
+    mpu->gyro_offset_y = gy/samples;
+    mpu->gyro_offset_z = gz/samples;
+
+    mpu->accel_offset_x = ax/samples;
+    mpu->accel_offset_y = ay/samples;
+    mpu->accel_offset_z = (az/samples) - 1.0f;
+
+    return 0;
+}
+
+//---------------------------------
+
+uint8_t MPU6050_Set_Accel_Offset(MPU6050 *mpu, float off_ax, float off_ay, float off_az)
+{
+    mpu->accel_offset_x = off_ax;
+    mpu->accel_offset_y = off_ay;
+    mpu->accel_offset_z = off_az;
+
+    return 0;
+}
+
+//---------------------------------
+
+uint8_t MPU6050_Set_Gyro_Offset(MPU6050 *mpu, float off_gx, float off_gy, float off_gz)
+{
+    mpu->gyro_offset_x = off_gx;
+    mpu->gyro_offset_y = off_gy;
+    mpu->gyro_offset_z = off_gz;
 
     return 0;
 }

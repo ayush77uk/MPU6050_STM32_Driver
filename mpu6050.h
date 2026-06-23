@@ -128,21 +128,42 @@ typedef struct
 
 } MPU6050;
 
-//Function declarations
 
-/* Function to initialize the MPU6050 device */
+//Function declarations----------------------------/
+
+/* Initialize the MPU6050 device */
 uint8_t MPU6050_Init(I2C_HandleTypeDef *i2c_handle, MPU6050 *device_instance, uint8_t device_adress);
 
 /* Read accelerometer readings */
-uint8_t MPU6050_ReadAccel(MPU6050 *device_instance);
+uint8_t MPU6050_Read_Accel(MPU6050 *device_instance);
 
 /* Read Gyroscope readings */
-uint8_t MPU6050_ReadGyro(MPU6050 *device_instance);
+uint8_t MPU6050_Read_Gyro(MPU6050 *device_instance);
 
 /* Read Temperature reading */
-uint8_t MPU6050_ReadTemp(MPU6050 *device_instace);
+uint8_t MPU6050_Read_Temp(MPU6050 *device_instace);
 
 /* Read all readings at once */
-uint8_t MPU6050_ReadAll(MPU6050 *device_instance);
+uint8_t MPU6050_Read_All(MPU6050 *device_instance);
 
-#endif
+/* Set accelerometer full scale range */
+uint8_t MPU6050_Set_Accel_Range(MPU6050 *device_instance, uint8_t range);
+
+/* Set gyroscope full scale range */
+uint8_t MPU6050_Set_Gyro_Range(MPU6050 *device_instance, uint8_t range);
+
+/* 
+Calibrate the MPU6050 moduel:
+Orient the MPU6050 in the desired position (usually in flat position) to set the offset of accelerometer and gyroscope.
+In the second parameter, enter the desired number of sample readings to take for calibration (The final offset is the average of all readings).
+*/
+uint8_t MPU6050_Calibrate(MPU6050 *mpu, uint16_t samples);
+
+/* Set accelerometer offset manually */
+uint8_t MPU6050_Set_Accel_Offset(MPU6050 *mpu, float off_ax, float off_ay, float off_az);
+
+/* Set gyroscope offset manually */
+uint8_t MPU6050_Set_Gyro_Offset(MPU6050 *mpu, float off_gx, float off_gy, float off_gz);
+
+
+#endif  /* #ifndef __MPU6050_H__ */

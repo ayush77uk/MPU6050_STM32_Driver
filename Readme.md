@@ -15,11 +15,11 @@ Supports accelerometer, gyroscope, and temperature acquisition with configurable
 * Burst-read acquisition using `MPU6050_ReadAll()`
 * Multi-device support over a shared I2C bus
 * Configurable:
-
   * Power modes
   * Sample rate
   * Accelerometer range
   * Gyroscope range
+  * Offset
   * Digital Low Pass Filter (DLPF)
 
 ---
@@ -34,18 +34,6 @@ Supported families:
 
 ---
 
-## 📂 Project Structure
-
-```plaintext
-MPU6050/
-├── mpu6050.c
-├── mpu6050.h
-├── mpu6050_config.h
-└── README.md
-```
-
----
-
 ## 🔌 Device Address
 
 | AD0  | Address |
@@ -57,33 +45,45 @@ Supports **up to 2 MPU6050 modules** on the same I2C bus.
 
 ---
 
-## 🚀 Quick Start
+## 📚 Quick Start Guide
 
+Make an MPU6050 object :
 ```c
-#include "mpu6050.h"
-
-MPU6050 imu;
-
-MPU6050_Init(&hi2c1, &imu, 0x68);
-
-MPU6050_ReadAll(&imu);
-
-printf("AX: %.2f g\n", imu.accel_gx);
-printf("GX: %.2f dps\n", imu.gyro_dps_x);
-printf("Temp: %.2f C\n", imu.temp_c);
+MPU6050 example_object;
 ```
 
----
-
-## 📚 API
-
+Initialize the MPU6050 module.
+Parameters: (&I2C_Handle, &example_object, device_address) :
 ```c
-MPU6050_Init()
-MPU6050_ReadAccel()
-MPU6050_ReadGyro()
-MPU6050_ReadTemp()
-MPU6050_ReadAll()
+MPU6050_Init(&hi2c1, &example_object, 0x68)
 ```
+
+Automatic offset calibration.
+Parameters: (Address of device instance, Number of sample readings to take) :
+```c
+MPU6050_Calibrate(&example_object, sample);
+```
+
+Read all sensors:
+```c
+MPU6050_ReadAll(&example_object);
+```
+
+Read Accelerometer (g value) :
+```c
+MPU6050_ReadAccel(&example_object);
+```
+
+Read Gyroscope (Degrees per second) :
+```c
+MPU6050_ReadGyro(&example_object);
+```
+
+Read module internal temperature (Degrees Celsius) :
+```c
+MPU6050_ReadTemp(&example_object);
+```
+
 
 ### Return Values
 
